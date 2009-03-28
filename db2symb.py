@@ -155,12 +155,14 @@ def convert(text, light=0):
     descs = fetcher.bigFetch(codes)
     text = braces.sub('%s', text)
     ret = text % tuple(descs)
+    ### TODO light
     if light:
         #spaces = re.compile('^[^, ]|[^,]\n')
         middle = re.compile('reaction\([^,()]*\(?[^()]*\)?')
         #ret = re.sub('reaction\([^,]*|[^,]*\)\n', '___________', ret)
         #print spaces.search(ret)
         #print spaces.findall(ret).strip(' ')
+    ### TODO enzyme codes
     return ret
 
 if '--convert' in sys.argv:
