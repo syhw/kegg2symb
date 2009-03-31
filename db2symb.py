@@ -39,7 +39,10 @@ import xml.sax
 from xml.sax.handler import ContentHandler
 
 import sys, re
-            
+
+codes = 0
+light = 0
+
 class DescFetcher(object):
     desc = re.compile('^\S* ([^;\n]*)(?:;.*|)$', re.MULTILINE)
 
@@ -54,6 +57,7 @@ class DescFetcher(object):
         REQ: len(list) < 100
         """
         req = ' '.join(list)
+        #results = self.serv.get_enzymes_by_reaction(req)
         results = self.serv.btit(req)
         return DescFetcher.desc.findall(results) 
 
@@ -123,11 +127,11 @@ class OfflineHandler(AbstractHandler):
         else:
             prds = OfflineHandler.format
         formatted = 'reaction(' + subs + ', '+ OfflineHandler.format +', '\
-                + prds + ', Km, Vm)\n'
+                + prds + ', Km)\n'
         self.result += formatted % tuple(args)
         if self.rev:
             formatted = 'reaction(' + prds + ', '+ OfflineHandler.format +', '\
-                    + subs + ', Km, Vm)\n'
+                    + subs + ', Km)\n'
             self.result += formatted % tuple(args[::-1])
 
     def onReactionGeneration(self):
@@ -143,7 +147,7 @@ class GenesHandler(OfflineHandler):
             args = self.substrates + [rg] + self.products
             self.formatReact(args)
 
-def convert(text, light=0):
+def convert(text):
     """
     Assumes every string between { } in the original text is
     a compound code or a reaction code, and replaces { } by the description
@@ -163,7 +167,15 @@ def convert(text, light=0):
         #print spaces.search(ret)
         #print spaces.findall(ret).strip(' ')
     ### TODO enzyme codes
+    if codes:
+       pass 
     return ret
+
+if '--codes' in sys.argv:
+    codes = 1
+
+if '--light' in sys.argv:
+    light = 1
 
 if '--convert' in sys.argv:
     print convert(sys.stdin.read()).rstrip()
@@ -182,10 +194,6 @@ else:
             handler = GenesHandler()
             xml.sax.parse(sys.stdin, handler)
             print convert(handler.getResult())
-        elif '--light' in sys.argv:
-            handler = OfflineHandler()
-            xml.sax.parse(sys.stdin, handler)
-            print convert(handler.getResult(), 1)
         else:
             handler = OfflineHandler()
             xml.sax.parse(sys.stdin, handler)
