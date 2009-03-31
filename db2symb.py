@@ -30,6 +30,9 @@ should have the very same behavior as
 for the full (online) version installation, SOAPpy is needed, see here:
 http://www.diveintopython.org/soap_web_services/install.html#d0e30070
 
+BAD CODE, DON'T DO IT AT HOME !
+BAD CODE, DON'T DO IT AT HOME !
+BAD CODE, DON'T DO IT AT HOME !
 """
 # Copyright (C) 2009 
 # Author: Gabriel Synnaeve (& Nicolas Dumazet)
@@ -40,8 +43,9 @@ from xml.sax.handler import ContentHandler
 
 import sys, re
 
-codes = 0
+enzymes = 0
 light = 0
+genes = 0
 
 class DescFetcher(object):
     desc = re.compile('^\S* ([^;\n]*)(?:;.*|)$', re.MULTILINE)
@@ -51,22 +55,37 @@ class DescFetcher(object):
         wsdl = 'http://soap.genome.jp/KEGG.wsdl'
         self.serv = WSDL.Proxy(wsdl)
 
-    def fetch(self, list):
+    def fetch(self, list, method):
         """
         Returns list of descriptions for kegg keywords list
         REQ: len(list) < 100
         """
         req = ' '.join(list)
-        #results = self.serv.get_enzymes_by_reaction(req)
-        results = self.serv.btit(req)
+        if method == 'btit':
+            results = self.serv.btit(req)
+        elif method == 'get_enzymes_by_reaction': ### TODO REFACTOR
+            results = ''
+            rname = req.split(' ')
+            for i in range(len(rname)):
+                enz = self.serv.get_enzymes_by_reaction(rname[i])
+                results = results + rname[i] + ' ' + '-'.join(enz) + '\n'
+            #sys.exit('Unfinished work')
+        elif method == 'get_enzymes_by_gene': ### TODO REFACTOR
+            results = ''
+            rname = req.split(' ')
+            print rname
+            for i in range(len(rname)):
+                enz = self.serv.get_enzymes_by_gene(rname[i])
+                results = results + rname[i] + ' ' + '-'.join(enz) + '\n'
+            #sys.exit('Unfinished work')
         return DescFetcher.desc.findall(results) 
 
-    def bigFetch(self, list):
+    def bigFetch(self, list, method='btit'):
         results = []
         while len(list) > 100:
-            results += self.fetch(list[:100])
+            results += self.fetch(list[:100], method)
             list = list[100:]
-        return results + self.fetch(list)       
+        return results + self.fetch(list, method)       
 
 class AbstractHandler(ContentHandler):
     """
@@ -152,27 +171,38 @@ def convert(text):
     Assumes every string between { } in the original text is
     a compound code or a reaction code, and replaces { } by the description
     """
-    braces = re.compile('{([^}]*)}')
-    fetcher = DescFetcher()
-        
-    codes = braces.findall(text)
-    descs = fetcher.bigFetch(codes)
-    text = braces.sub('%s', text)
-    ret = text % tuple(descs)
-    ### TODO light
+    if enzymes: # TODO REFACTOR
+        fetcher = DescFetcher()
+        braces = re.compile('{(cpd[^}]*)}')
+        codes = braces.findall(text)
+        descs = fetcher.bigFetch(codes)
+        text = braces.sub('%s', text)
+        ret = text % tuple(descs)
+        if genes:
+            braces = re.compile('{(sce[^}]*)}')
+            codes = braces.findall(text)
+            descs = fetcher.bigFetch(codes, 'get_enzymes_by_gene')
+        else:
+            braces = re.compile('{(rn[^}]*)}')
+            codes = braces.findall(text)
+            descs = fetcher.bigFetch(codes, 'get_enzymes_by_reaction')
+        #descs = fetcher.bigFetch(codes)
+        ret = braces.sub('%s', ret)
+        ret = ret % tuple(descs)
+    else: 
+        braces = re.compile('{([^}]*)}')
+        fetcher = DescFetcher()
+        codes = braces.findall(text)
+        descs = fetcher.bigFetch(codes)
+        text = braces.sub('%s', text)
+        ret = text % tuple(descs)
+    ### TODO LIGHT
     if light:
-        #spaces = re.compile('^[^, ]|[^,]\n')
         middle = re.compile('reaction\([^,()]*\(?[^()]*\)?')
-        #ret = re.sub('reaction\([^,]*|[^,]*\)\n', '___________', ret)
-        #print spaces.search(ret)
-        #print spaces.findall(ret).strip(' ')
-    ### TODO enzyme codes
-    if codes:
-       pass 
     return ret
 
-if '--codes' in sys.argv:
-    codes = 1
+if '--enzymes' in sys.argv:
+    enzymes = 1
 
 if '--light' in sys.argv:
     light = 1
@@ -182,6 +212,7 @@ if '--convert' in sys.argv:
 else:
     if '--offline' in sys.argv:
         if '--genes' in sys.argv:
+            genes = 1
             handler = GenesHandler()
             xml.sax.parse(sys.stdin, handler)
             print handler.getResult()
@@ -191,6 +222,7 @@ else:
             print handler.getResult()
     else:
         if '--genes' in sys.argv:
+            genes = 1
             handler = GenesHandler()
             xml.sax.parse(sys.stdin, handler)
             print convert(handler.getResult())
