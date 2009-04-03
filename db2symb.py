@@ -30,9 +30,6 @@ should have the very same behavior as
 for the full (online) version installation, SOAPpy is needed, see here:
 http://www.diveintopython.org/soap_web_services/install.html#d0e30070
 
-BAD CODE, DON'T DO IT AT HOME !
-BAD CODE, DON'T DO IT AT HOME !
-BAD CODE, DON'T DO IT AT HOME !
 """
 # Copyright (C) 2009 
 # Author: Gabriel Synnaeve (& Nicolas Dumazet)
