@@ -198,6 +198,17 @@ def convert(text):
         middle = re.compile('reaction\([^,()]*\(?[^()]*\)?')
     return ret
 
+for a in sys.argv:
+    if '--web' in a:
+        d_url = a.replace('--web','')
+        import urllib
+        url2fetch = 'ftp://ftp.genome.jp/pub/kegg/xml/organisms/'\
+                +d_url[:3]+'/'+d_url+'.xml'        
+        print url2fetch
+        urllib.urlretrieve(url2fetch, 'tmpfile')
+        tmpfile = open('tmpfile', 'r')
+        sys.stdin = tmpfile
+
 if '--enzymes' in sys.argv:
     enzymes = 1
 
